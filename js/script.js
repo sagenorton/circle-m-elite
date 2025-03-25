@@ -1626,13 +1626,16 @@ function displayResults(totalCost, detailedCosts, unit) {
     
     // Calculate truck count and display
     Object.values(groupedTrucks).forEach(truck => {
-      const count = Math.ceil(truck.totalAmount / truck.max);
-      const detail = document.createElement('p');
-      detail.textContent = `${count} ${truck.truckName}(s) of ${truck.max} ${unit}s at $${truck.costPerUnit.toFixed(2)} per ${unit}`;
-      detailSection.appendChild(detail);
-    
-      console.log(`${count} ${truck.truckName}(s) of ${truck.max} ${unit}s at $${truck.costPerUnit.toFixed(2)} per ${unit}`);
-    });    
+        const count = Math.ceil(truck.totalAmount / truck.max);
+      
+        const perTruckAmount = truck.totalAmount / count;
+      
+        const detail = document.createElement('p');
+        detail.textContent = `${count} ${truck.truckName}(s) of ${perTruckAmount} ${unit}s at $${truck.costPerUnit.toFixed(2)} per ${unit}`;
+        detailSection.appendChild(detail);
+      
+        console.log(`${count} ${truck.truckName}(s) of ${perTruckAmount} ${unit}s at $${truck.costPerUnit.toFixed(2)} per ${unit}`);
+      });          
 
     // Prevent NaN or undefined total cost issues
     if (isNaN(totalCost) || totalCost === undefined) {
