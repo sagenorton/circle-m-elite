@@ -1441,7 +1441,11 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
             };
         }
     
-        groupedTrucks[truckGroupKey].count++;
+        const truckCount = Math.ceil(load.amount / load.max);
+
+        groupedTrucks[truckGroupKey].count += truckCount;
+        groupedTrucks[truckGroupKey].max = load.max;
+
         totalAmount += load.amount;
     });
     
@@ -1577,7 +1581,6 @@ function displayResults(totalCost, detailedCosts, unit) {
 
     // Clear previous results
     detailSection.innerHTML = ''; 
-    let groupedTrucks = {};
 
     // Group the detailed costs by truck type, amount, and rate
     console.log("Debugging `displayResults()`:");
@@ -1602,33 +1605,33 @@ function displayResults(totalCost, detailedCosts, unit) {
         return;
     }
     
-    // Ensure pit loads are included
+    const groupedTrucks = {};
+
     detailedCosts.forEach(load => {
-        console.log(`Valid truck cost: ${load.truckName} - ${load.amount} tons at $${load.costPerUnit.toFixed(2)} per ton.`);
-
-        const truckName = load.truckName;
-        const truckGroupKey = `${truckName}-${load.amount}-${load.rate}`;
-
-        if (!groupedTrucks[truckGroupKey]) {
-            groupedTrucks[truckGroupKey] = {
-                count: 0,
-                amount: load.amount,
-                costPerUnit: load.costPerUnit,
-                truckName: truckName
-            };
-        }
-
-        groupedTrucks[truckGroupKey].count++;
+      const key = `${load.truckName}-${load.rate}-${load.max}`;
+    
+      if (!groupedTrucks[key]) {
+        groupedTrucks[key] = {
+          truckName: load.truckName,
+          rate: load.rate,
+          max: load.max,
+          totalAmount: 0,
+          costPerUnit: load.costPerUnit
+        };
+      }
+    
+      groupedTrucks[key].totalAmount += load.amount;
     });
-
-    // Add to UI
+    
+    // Calculate truck count and display
     Object.values(groupedTrucks).forEach(truck => {
-        let detail = document.createElement('p');
-        detail.textContent = `${truck.count} ${truck.truckName}(s) of ${truck.amount} ${unit}s at $${truck.costPerUnit.toFixed(2)} per ${unit}`;
-        detailSection.appendChild(detail);
-
-        console.log(`${truck.count} ${truck.truckName}(s) of ${truck.amount} tons at $${truck.costPerUnit.toFixed(2)} per ton`);
-    });
+      const count = Math.ceil(truck.totalAmount / truck.max);
+      const detail = document.createElement('p');
+      detail.textContent = `${count} ${truck.truckName}(s) of ${truck.max} ${unit}s at $${truck.costPerUnit.toFixed(2)} per ${unit}`;
+      detailSection.appendChild(detail);
+    
+      console.log(`${count} ${truck.truckName}(s) of ${truck.max} ${unit}s at $${truck.costPerUnit.toFixed(2)} per ${unit}`);
+    });    
 
     // Prevent NaN or undefined total cost issues
     if (isNaN(totalCost) || totalCost === undefined) {
