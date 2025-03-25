@@ -1298,7 +1298,8 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location) {
         pitLoads.push({
             truckName: bestPitTruck.name,
             amount: loadAmount,
-            rate: bestPitTruck.rate
+            rate: bestPitTruck.rate,
+            max: bestPitTruck.max
         });
     }
 
@@ -1345,7 +1346,6 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
 
     let totalCost = 0;
     let detailedCosts = [];
-    let lastJourneyTime = 0;
 
     // Find the drive times for the journey
     let driveTimeYardToPit = distances.find(d => d.from.includes(pit.closest_yard) || d.to.includes(pit.closest_yard))?.duration;
@@ -1358,7 +1358,9 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
 
     // Calculate the total load amount and the number of trips needed
     const totalLoadAmount = pitLoads.reduce((sum, load) => sum + load.amount, 0);
-    let tripCount = Math.ceil(totalLoadAmount / pitLoads[0].max);
+    let truckMax = pitLoads[0]?.max || 1;
+    let tripCount = Math.ceil(totalLoadAmount / truckMax);
+
 
     // Calculate the total drive time for all trips
     let totalDriveTime = driveTimeYardToPit + (driveTimePitToDrop * (tripCount * 2 - 1)) + driveTimeDropToYard;
@@ -1368,8 +1370,6 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
 
     // Calculate the final total journey time including load/unload time
     let totalJourneyTime = adjustedTravelTime + (36 * tripCount);
-
-    lastJourneyTime = totalJourneyTime;
 
     // Calculate the cost for each pit load
     pitLoads.forEach(load => {
