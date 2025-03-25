@@ -1227,7 +1227,8 @@ async function computeYardCosts(truckLoadInfo, yard, distances, addressInput, ma
             rate: load.rate,
             amount: load.amount,
             costPerUnit,
-            costPerLoad
+            costPerLoad,
+            max: load.max
         });
 
         totalCost += costPerLoad;
