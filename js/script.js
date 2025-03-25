@@ -1379,43 +1379,39 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
         return;
     }
 
-    // Calculate cost for each pit load independently
+    const grouped = {};
+
     pitLoads.forEach(load => {
-        if (!load.amount || isNaN(load.amount) || !load.rate || isNaN(load.rate)) {
-            console.error(`ERROR: Invalid pit load found:`, load);
-            return;
-        }
-
-        // Determine number of trips for this truck
-        const truckMax = load.max || 1;
-        const tripCount = Math.ceil(load.amount / truckMax);
-
-        // Calculate journey time for this load
-        const driveTime = driveTimeYardToPit + (driveTimePitToDrop * (tripCount * 2 - 1)) + driveTimeDropToYard;
-        const adjustedTravelTime = driveTime * 1.15;
-        const totalJourneyTime = adjustedTravelTime + (36 * tripCount);
-
-        // Calculate cost per unit and load
-        let costPerUnit = (((totalJourneyTime / 60) * load.rate) / load.amount) + (pit.price || 0);
-
-        if (isNaN(costPerUnit) || !isFinite(costPerUnit)) {
-            console.error(`ERROR: Invalid costPerUnit for ${load.truckName}. Defaulting to $0.`);
-            costPerUnit = 0;
-        }
-
-        const costPerLoad = costPerUnit * load.amount;
-
-        detailedCosts.push({
-            truckName: load.truckName,
-            rate: load.rate,
-            amount: load.amount,
-            costPerUnit,
-            costPerLoad
-        });
-
-        totalCost += costPerLoad;
+    const key = `${load.truckName}-${load.max}`;
+    if (!grouped[key]) {
+        grouped[key] = {
+        truckName: load.truckName,
+        max: load.max,
+        rate: load.rate,
+        totalAmount: 0,
+        };
+    }
+    grouped[key].totalAmount += load.amount;
     });
-   
+
+    Object.values(grouped).forEach(group => {
+    const tripCount = Math.ceil(group.totalAmount / group.max);
+    const driveTime = driveTimeYardToPit + (driveTimePitToDrop * (tripCount * 2 - 1)) + driveTimeDropToYard;
+    const totalJourneyTime = (driveTime * 1.15) + (36 * tripCount);
+  
+    const costPerUnit = (((totalJourneyTime / 60) * group.rate) / group.totalAmount) + pit.price;
+    const costPerLoad = costPerUnit * group.totalAmount;
+
+    detailedCosts.push({
+        truckName: group.truckName,
+        amount: group.totalAmount,
+        rate: group.rate,
+        costPerUnit,
+        costPerLoad,
+    });
+
+    totalCost += costPerLoad;
+    });
 
     console.log("===================================");
     console.log("Pit Calculations:");
