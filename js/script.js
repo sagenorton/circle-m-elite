@@ -630,6 +630,7 @@ const materialData = {
         "sold_by": "ton",
         "locations": [
             { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 67.50, "trucks": ["truck_A", "truck_B", "truck_C"] },
+            { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 63.50, "trucks": ["truck_A", "truck_B", "truck_C"] },
             { "name": "Lane Mountain PIT", "address": "3119 WA-231, Valley, WA 99181", "price": 49.00, "closest_yard": "1208 E Hawthorne Rd, Spokane, WA 99217", "trucks": ["truck_A", "truck_B", "truck_C"] }
         ],
         "truck_A": [
@@ -645,7 +646,8 @@ const materialData = {
     "black_lava_rock": {
         "sold_by": "ton",
         "locations": [
-            { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 113.00, "trucks": ["truck_A", "truck_B", "truck_C"] }
+            { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 113.00, "trucks": ["truck_A", "truck_B", "truck_C"] },
+            { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 113.00, "trucks": ["truck_A", "truck_B", "truck_C"] }
         ],
         "truck_A": [
             {"name": "Small Truck", "min": 1, "max": 8, "rate": 140}
@@ -874,7 +876,8 @@ const materialData = {
     "deicing_salt_sand_mix": {
         "sold_by": "ton",
         "locations": [
-            { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 43.50, "trucks": ["truck_A", "truck_B", "truck_C"] }
+            { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 43.50, "trucks": ["truck_A", "truck_B", "truck_C"] },
+            { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 40.50, "trucks": ["truck_A", "truck_B", "truck_C"] }
         ],
         "truck_A": [
             {"name": "Small Truck", "min": 1, "max": 8, "rate": 140}
@@ -889,7 +892,8 @@ const materialData = {
     "deicing_salt_sand_torp_mix": {
         "sold_by": "ton",
         "locations": [
-            { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 49.00, "trucks": ["truck_A", "truck_B", "truck_C"] }
+            { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 49.00, "trucks": ["truck_A", "truck_B", "truck_C"] },
+            { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 46.00, "trucks": ["truck_A", "truck_B", "truck_C"] }
         ],
         "truck_A": [
             {"name": "Small Truck", "min": 1, "max": 8, "rate": 140}
