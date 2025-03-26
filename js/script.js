@@ -1145,7 +1145,8 @@ async function calculateYardTruckLoads(remaining, materialInfo, location) {
         yardLoads.push({
             truckName: bestYardTruck.name,
             amount: loadAmount,
-            rate: bestYardTruck.rate
+            rate: bestYardTruck.rate,
+            max: bestYardTruck.max
         });
 
         // Break the loop if the remaining load is fully assigned
