@@ -681,10 +681,10 @@ const materialData = {
         "locations": [
             { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 32.50, "trucks": ["truck_A"] },
             { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 33.00, "trucks": ["truck_A"] },
-            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 24.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_A", "truck_D"] }
+            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 24.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_D"] }
         ],
         "truck_A": [
-            {"name": "Small Truck", "min": 1, "max": 13, "rate": 140}
+            {"name": "Small Truck", "min": 1, "max": 15, "rate": 140}
         ],
         "truck_D": [
             {"name": "Semi Truck", "min": 70, "max": 70, "rate": 185}
@@ -695,7 +695,7 @@ const materialData = {
         "locations": [
             { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 47.50, "trucks": ["truck_A"] },
             { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 48.00, "trucks": ["truck_A"] },
-            { "name": "Premiere PIT", "address": "48.181955, -117.006770", "price": 42.00, "closest_yard": "1208 E Hawthorne Rd, Spokane, WA 99217", "trucks": ["truck_A","truck_D"] }
+            { "name": "Premiere PIT", "address": "48.181955, -117.006770", "price": 42.00, "closest_yard": "1208 E Hawthorne Rd, Spokane, WA 99217", "trucks": ["truck_D"] }
         ],
         "truck_A": [
             {"name": "Small Truck", "min": 1, "max": 25, "rate": 140}
@@ -709,7 +709,7 @@ const materialData = {
         "locations": [
             { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 29.50, "trucks": ["truck_A"] },
             { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 30.00, "trucks": ["truck_A"] },
-            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 24.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_A", "truck_D"] }
+            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 24.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_D"] }
         ],
         "truck_A": [
             {"name": "Small Truck", "min": 1, "max": 25, "rate": 140}
@@ -723,7 +723,7 @@ const materialData = {
         "locations": [
             { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 53.50, "trucks": ["truck_A"] },
             { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 54.00, "trucks": ["truck_A"] },
-            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 48.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_A", "truck_D"] }
+            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 48.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_D"] }
         ],
         "truck_A": [
             {"name": "Small Truck", "min": 1, "max": 25, "rate": 140}
@@ -737,7 +737,7 @@ const materialData = {
         "locations": [
             { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 29.50, "trucks": ["truck_A"] },
             { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 30.00, "trucks": ["truck_A"] },
-            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 24.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_A", "truck_D"] }
+            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 24.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_D"] }
         ],
         "truck_A": [
             {"name": "Small Truck", "min": 1, "max": 25, "rate": 140}
@@ -751,7 +751,7 @@ const materialData = {
         "locations": [
             { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 25.50, "trucks": ["truck_A"] },
             { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 26.00, "trucks": ["truck_A"] },
-            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 20.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_A", "truck_D"] }
+            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 20.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_D"] }
         ],
         "truck_A": [
             {"name": "Small Truck", "min": 1, "max": 25, "rate": 140}
@@ -765,7 +765,7 @@ const materialData = {
         "locations": [
             { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 81.50, "trucks": ["truck_A"] },
             { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 82.00, "trucks": ["truck_A"] },
-            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 76.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_A", "truck_D"] }
+            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 76.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_D"] }
         ],
         "truck_A": [
             {"name": "Small Truck", "min": 1, "max": 25, "rate": 140}
