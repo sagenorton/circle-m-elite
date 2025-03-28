@@ -1148,7 +1148,7 @@ async function calculateYardTruckLoads(remaining, materialInfo, location) {
             break;
         }
 
-        let loadAmount = Math.min(bestYardTruck.max, remaining);
+        let loadAmount = Math.floor(Math.min(bestYardTruck.max, remaining));
         remaining -= loadAmount;
 
         yardLoads.push({
@@ -1332,7 +1332,7 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location) {
         break;
     }
 
-        let loadAmount = Math.min(bestPitTruck.max, remaining);
+        let loadAmount = Math.floor(Math.min(bestPitTruck.max, remaining));
         remaining -= loadAmount;
 
         pitLoads.push({
