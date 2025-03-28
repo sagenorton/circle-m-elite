@@ -1137,32 +1137,27 @@ async function calculateYardTruckLoads(remaining, materialInfo, location) {
 
     while (remaining > 0) {
         let bestYardTruck = yardTrucks.find(truck => remaining >= truck.min);
-
-    if (!bestYardTruck) {
-        console.warn(`No suitable truck found for ${remaining} ${materialInfo.sold_by}s.`);
-        break;
-    }
-
+    
         if (!bestYardTruck) {
-            console.error(`No suitable yard truck found for ${remaining} tons.`);
+            console.warn(`No suitable yard truck found for ${remaining} ${materialInfo.sold_by}s.`);
             break;
         }
-
+    
         let loadAmount = Math.floor(Math.min(bestYardTruck.max, remaining));
         remaining -= loadAmount;
-
+    
         yardLoads.push({
             truckName: bestYardTruck.name,
             amount: loadAmount,
             rate: bestYardTruck.rate,
             max: bestYardTruck.max
         });
-
-        // Break the loop if the remaining load is fully assigned
-        if (remaining <= 0) {
-            break;
+    
+        if (remaining < bestYardTruck.min && remaining > 0) {
+            console.warn(`Remaining load ${remaining} is too small for any available truck.`);
+            remaining = 0;
         }
-    }
+    }    
     
     console.log(`Yard Truck Loads for ${location.name}:`, yardLoads);
     return { yardLoads, remaining };
@@ -1326,22 +1321,27 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location) {
 
     while (remaining > 0) {
         let bestPitTruck = pitTrucks.find(truck => remaining >= truck.min);
-
-    if (!bestPitTruck) {
-        console.warn(`No suitable pit truck found for ${remaining} ${materialInfo.sold_by}s.`);
-        break;
-    }
-
+    
+        if (!bestPitTruck) {
+            console.warn(`No suitable pit truck found for ${remaining} ${materialInfo.sold_by}s.`);
+            break;
+        }
+    
         let loadAmount = Math.floor(Math.min(bestPitTruck.max, remaining));
         remaining -= loadAmount;
-
+    
         pitLoads.push({
             truckName: bestPitTruck.name,
             amount: loadAmount,
             rate: bestPitTruck.rate,
             max: bestPitTruck.max
         });
-    }
+    
+        if (remaining < bestPitTruck.min && remaining > 0) {
+            console.warn(`Remaining load ${remaining} is too small for any available truck.`);
+            remaining = 0;
+        }
+    }    
 
     console.log(`Completed Pit Load Calculation for: ${location.name}`);
     return { pitLoads };
@@ -1626,33 +1626,29 @@ function displayResults(totalCost, detailedCosts, unit) {
     const groupedTrucks = {};
 
     detailedCosts.forEach(load => {
-      const key = `${load.truckName}-${load.rate}-${load.max}`;
-    
-      if (!groupedTrucks[key]) {
-        groupedTrucks[key] = {
-          truckName: load.truckName,
-          rate: load.rate,
-          max: load.max,
-          totalAmount: 0,
-          costPerUnit: load.costPerUnit
-        };
-      }
-    
-      groupedTrucks[key].totalAmount += load.amount;
+        // Corrected grouping key to include truck name, amount, and rate
+        const key = `${load.truckName}-${load.amount}-${load.rate}`;
+        
+        if (!groupedTrucks[key]) {
+            groupedTrucks[key] = {
+                truckName: load.truckName,
+                amount: load.amount,
+                rate: load.rate,
+                costPerUnit: load.costPerUnit,
+                count: 0
+            };
+        }
+
+        // Increment count properly to match console output
+        groupedTrucks[key].count += 1;
     });
-    
-    // Calculate truck count and display
+
+    // Correctly display each truck and amount as shown in the console
     Object.values(groupedTrucks).forEach(truck => {
-        const count = Math.ceil(truck.totalAmount / truck.max);
-      
-        const perTruckAmount = truck.totalAmount / count;
-      
         const detail = document.createElement('p');
-        detail.textContent = `${count} ${truck.truckName}(s) of ${perTruckAmount} ${unit}s at $${truck.costPerUnit.toFixed(2)} per ${unit}`;
+        detail.textContent = `${truck.count} ${truck.truckName}(s) of ${truck.amount} ${unit}s at $${truck.costPerUnit.toFixed(2)} per ${unit}`;
         detailSection.appendChild(detail);
-      
-        console.log(`${count} ${truck.truckName}(s) of ${perTruckAmount} ${unit}s at $${truck.costPerUnit.toFixed(2)} per ${unit}`);
-      });          
+    });
 
     // Prevent NaN or undefined total cost issues
     if (isNaN(totalCost) || totalCost === undefined) {
@@ -1660,7 +1656,7 @@ function displayResults(totalCost, detailedCosts, unit) {
         totalCost = 0;
     }
 
-    // Display total cost
+    // Display total cost correctly
     totalCostElement.value = "$" + totalCost.toFixed(2);
     console.log(`Total Cost: $${totalCost.toFixed(2)}`);
 }
