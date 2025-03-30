@@ -28,46 +28,36 @@ function loadGoogleMapsApi() {
 
 
 
-/* --------------------- Initialize Google Places PlaceAutocompleteElement -------------------------- */
+/* --------------------- Initialize Google Places Autocomplete -------------------------- */
 function initializeAutocomplete() {
     const addressInput = document.getElementById("address");
 
     if (addressInput) {
-        // Create the PlaceAutocompleteElement
-        const autocompleteElement = document.createElement('gmp-place-autocomplete');
-        autocompleteElement.id = 'autocomplete';
-        autocompleteElement.setAttribute('fields', 'formatted_address,geometry');
+        // Initialize Autocomplete with the address input field
+        const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+            types: ["geocode"],
+        });
 
-        // Replace the original address input with the PlaceAutocompleteElement
-        addressInput.parentNode.replaceChild(autocompleteElement, addressInput);
+        // Add event listener for place selection
+        autocomplete.addListener("place_changed", function () {
+            const place = autocomplete.getPlace();
 
-        // Create a new input element inside autocomplete to allow user input
-        const newInput = document.createElement("input");
-        newInput.type = "text";
-        newInput.id = "address";
-        newInput.name = "address";
-        newInput.placeholder = "Enter delivery address";
-        newInput.setAttribute("aria-describedby", "address-help");
-
-        autocompleteElement.appendChild(newInput);
-
-        // Listen for gmp-placeselect event
-        autocompleteElement.addEventListener("gmp-placeselect", (event) => {
-            const place = event.detail.place;
-
-            if (!place || !place.formatted_address) {
-                console.error("No details available for input.");
+            if (!place.geometry) {
+                console.error("No details available for input: " + addressInput.value);
                 return;
             }
 
-            // Fill the new input with the selected address
-            newInput.value = place.formatted_address;
+            // Auto-fill the address input field with the selected place
+            addressInput.value = place.formatted_address;
             console.log("Selected Address:", place.formatted_address);
         });
 
-        console.log("Google Places PlaceAutocompleteElement initialized.");
+        console.log("Google Places Autocomplete initialized and ready.");
+    } else {
+        console.error("Address input not found.");
     }
 }
+
 
 
 // Initialize Google Maps API and Autocomplete
