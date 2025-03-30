@@ -34,13 +34,12 @@ function initializeAutocomplete() {
 
     if (addressInput) {
         // Create a new PlaceAutocompleteElement
-        const autocompleteElement = document.createElement('place-autocomplete');
+        const autocompleteElement = document.createElement('gmp-place-autocomplete');
         autocompleteElement.id = 'autocomplete';
-        autocompleteElement.setAttribute('input', 'address'); // Connect to the original input
         autocompleteElement.setAttribute('fields', 'formatted_address,geometry');
-
-        // Replace the original input with the new autocomplete element
-        addressInput.parentNode.replaceChild(autocompleteElement, addressInput);
+        
+        // Insert the autocomplete element right before the address input
+        addressInput.parentNode.insertBefore(autocompleteElement, addressInput);
 
         // Add event listener for place selection
         autocompleteElement.addEventListener('gmp-placeselect', (event) => {
@@ -51,7 +50,7 @@ function initializeAutocomplete() {
                 return;
             }
 
-            // Auto-fill the address input field with the selected place
+            // Auto-fill the original address input field with the selected place
             addressInput.value = place.formatted_address;
             console.log("Selected Address:", place.formatted_address);
         });
@@ -59,6 +58,7 @@ function initializeAutocomplete() {
         console.log("Google Places PlaceAutocompleteElement initialized.");
     }
 }
+
 
 // Initialize Google Maps API and Autocomplete
 window.initMap = function () {
