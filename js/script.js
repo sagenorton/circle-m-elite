@@ -1380,23 +1380,25 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location, fina
     // Sort pit trucks by max capacity (largest trucks first)
     pitTrucks.sort((a, b) => b.max - a.max);
 
+    // Initialize grouped truck data for accurate grouping
     let groupedPitTrucks = {};
-
     pitTrucks.forEach(truck => {
         if (!groupedPitTrucks[truck.name]) {
             groupedPitTrucks[truck.name] = {
                 truck: truck,
                 totalAmount: 0,
                 tripCount: 0,
+                rate: truck.rate
             };
         }
     });
 
+    // Process loads until remaining amount is zero or below minimum truck size
     while (remaining > 0) {
         let bestPitTruck = pitTrucks.find(truck => remaining >= truck.min) || null;
-    
+
         if (!bestPitTruck) {
-            // Assign remaining to yard if no valid truck is found
+            // Assign remaining to yard if no valid pit truck is available
             console.warn(`Remaining ${remaining} tons does not meet any pit truck's minimum. Assigning to yard: ${finalClosestYard}`);
             
             let yardAssignment = await assignToYard(
@@ -1407,53 +1409,48 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location, fina
                 addressInput,
                 true // Suppress logs for overflow yard calculations
             );
-    
+
             if (!yardAssignment || yardAssignment.yardLoads.length === 0) {
                 console.error(`ERROR: No valid yard loads assigned for remaining ${remaining} tons.`);
                 return { pitLoads, yardLoads: [], totalCost: Infinity };
             }
-    
+
             yardLoads = yardAssignment.yardLoads;
             return { pitLoads, yardLoads, totalCost: yardAssignment.totalCost };
         }
-    
+
         let loadAmount = Math.min(bestPitTruck.max, remaining);
         remaining -= loadAmount;
-    
-        // Add to grouped data
-        if (!groupedPitTrucks[bestPitTruck.name]) {
-            groupedPitTrucks[bestPitTruck.name] = {
-                truck: bestPitTruck,
-                totalAmount: 0,
-                tripCount: 0,
-                rate: bestPitTruck.rate
-            };
-        }
-    
+
+        // Add to grouped data for this truck type
         groupedPitTrucks[bestPitTruck.name].totalAmount += loadAmount;
-        groupedPitTrucks[bestPitTruck.name].tripCount += Math.ceil(loadAmount / bestPitTruck.max);
-        
-        console.log("Grouped Pit Truck Summary:");
-        for (let truckName in groupedPitTrucks) {
-            let { totalAmount, tripCount, rate } = groupedPitTrucks[truckName];
-            console.log(`- ${truckName}: ${totalAmount} tons, ${tripCount} trips at $${rate} per ton.`);
-        }
-    
+
+        // Correct trip count by dividing total amount by truck max size
+        groupedPitTrucks[bestPitTruck.name].tripCount = Math.ceil(groupedPitTrucks[bestPitTruck.name].totalAmount / bestPitTruck.max);
+
+        // Store pit load details
         pitLoads.push({
             truckName: bestPitTruck.name,
             amount: loadAmount,
             rate: bestPitTruck.rate,
             max: bestPitTruck.max
         });
-    }    
+    }
+
+    // Log the final grouped truck summary after all iterations
+    console.log("Final Grouped Pit Truck Summary:");
+    Object.entries(groupedPitTrucks).forEach(([truckName, { totalAmount, tripCount, rate }]) => {
+        console.log(`- ${truckName}: ${totalAmount} tons, ${tripCount} trips at $${rate.toFixed(2)} per ton.`);
+    });
 
     console.log(`Completed Pit Load Calculation for: ${location.name}, remaining = ${remaining}`);
     
     let totalPitCost = 0;
     let detailedPitCosts = [];
 
+    // Process costs per truck type after grouping
     for (let truckName in groupedPitTrucks) {
-        let { truck, totalAmount, tripCount } = groupedPitTrucks[truckName];
+        let { truck, totalAmount, tripCount, rate } = groupedPitTrucks[truckName];
 
         // Calculate distances for this truck type
         let distancesForTruck = await calculateDistances([
@@ -1463,27 +1460,29 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location, fina
         ]);
 
         let totalJourneyTime = (distancesForTruck[0]?.duration || 0) + (distancesForTruck[1]?.duration || 0) + (distancesForTruck[2]?.duration || 0);
-        totalJourneyTime = totalJourneyTime * 1.15 + (36 * tripCount); // Add load/unload time
+        totalJourneyTime = totalJourneyTime * 1.10 + (36 * tripCount); // Adjusted multiplier to prevent overinflated costs
 
-        // Calculate per unit and per load costs for this truck type
-        let costPerUnit = ((totalJourneyTime / 60) * truck.rate) / totalAmount;
-        costPerUnit += (location.price || 0);
-
+        // Correct cost per unit calculation using the grouped truck rate
+        let costPerUnit = (((totalJourneyTime / 60) * rate) / totalAmount) + (location.price || 0);
+        
+        // Calculate total cost for this truck type
         let costPerLoad = costPerUnit * totalAmount;
-
         totalPitCost += costPerLoad;
 
+        // Push detailed cost breakdown
         detailedPitCosts.push({
             truckName,
-            rate: truck.rate,
+            rate: rate,
             amount: totalAmount,
             costPerUnit,
             costPerLoad
         });
 
+        // Final cost log for verification
         console.log(`Truck: ${truckName}, Total Amount: ${totalAmount}, Trips: ${tripCount}, Cost Per Unit: ${costPerUnit.toFixed(2)}`);
     }
 
+    // Assign any remaining yard loads if applicable
     yardLoads = yardAssignment ? yardAssignment.yardLoads : [];
 
     return {
@@ -1493,6 +1492,7 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location, fina
         detailedPitCosts
     };
 }
+
 
 
 
