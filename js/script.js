@@ -28,36 +28,42 @@ function loadGoogleMapsApi() {
 
 
 
-/* --------------------- Initialize Google Places Autocomplete -------------------------- */
+/* --------------------- Initialize Google Places PlaceAutocompleteElement -------------------------- */
 function initializeAutocomplete() {
     const addressInput = document.getElementById("address");
 
     if (addressInput) {
-        const autocomplete = new google.maps.places.Autocomplete(addressInput, {
-            types: ["geocode"] // Suggest only address locations
-        });
+        // Create a new PlaceAutocompleteElement
+        const autocompleteElement = document.createElement('place-autocomplete');
+        autocompleteElement.id = 'autocomplete';
+        autocompleteElement.setAttribute('input', 'address'); // Connect to the original input
+        autocompleteElement.setAttribute('fields', 'formatted_address,geometry');
 
-        // Add event listener to handle when a user selects an address
-        autocomplete.addListener("place_changed", function () {
-            const place = autocomplete.getPlace();
-            if (!place.geometry) {
-                console.error("No details available for input: " + addressInput.value);
+        // Replace the original input with the new autocomplete element
+        addressInput.parentNode.replaceChild(autocompleteElement, addressInput);
+
+        // Add event listener for place selection
+        autocompleteElement.addEventListener('gmp-placeselect', (event) => {
+            const place = event.detail.place;
+
+            if (!place || !place.formatted_address) {
+                console.error("No details available for input.");
                 return;
             }
+
             // Auto-fill the address input field with the selected place
             addressInput.value = place.formatted_address;
             console.log("Selected Address:", place.formatted_address);
         });
 
-        console.log("Google Places Autocomplete initialized and selection event added.");
+        console.log("Google Places PlaceAutocompleteElement initialized.");
     }
-
 }
 
 // Initialize Google Maps API and Autocomplete
 window.initMap = function () {
     console.log("Google Maps API loaded successfully.");
-    initializeAutocomplete(); // Ensure autocomplete is initialized when Maps API is ready
+    initializeAutocomplete(); // Ensure PlaceAutocompleteElement is initialized when Maps API is ready
 };
 
 
