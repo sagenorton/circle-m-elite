@@ -19,7 +19,7 @@ function loadGoogleMapsApi() {
 
     // Create and append the script asynchronously
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap&loading=async`;
     script.async = true;
     script.defer = true;
     script.onload = () => console.log("Google Maps API successfully loaded.");
@@ -37,13 +37,22 @@ function initializeAutocomplete() {
         const autocompleteElement = document.createElement('gmp-place-autocomplete');
         autocompleteElement.id = 'autocomplete';
         autocompleteElement.setAttribute('fields', 'formatted_address,geometry');
-        autocompleteElement.setAttribute('inputmode', 'text'); // To allow input
-        
-        // Replace the original input with the autocomplete element
-        addressInput.parentNode.insertBefore(autocompleteElement, addressInput.nextSibling);
 
-        // Add event listener to listen for the selection
-        autocompleteElement.addEventListener('gmp-placeselect', (event) => {
+        // Replace the original address input with the PlaceAutocompleteElement
+        addressInput.parentNode.replaceChild(autocompleteElement, addressInput);
+
+        // Create a new input element inside autocomplete to allow user input
+        const newInput = document.createElement("input");
+        newInput.type = "text";
+        newInput.id = "address";
+        newInput.name = "address";
+        newInput.placeholder = "Enter delivery address";
+        newInput.setAttribute("aria-describedby", "address-help");
+
+        autocompleteElement.appendChild(newInput);
+
+        // Listen for gmp-placeselect event
+        autocompleteElement.addEventListener("gmp-placeselect", (event) => {
             const place = event.detail.place;
 
             if (!place || !place.formatted_address) {
@@ -51,8 +60,8 @@ function initializeAutocomplete() {
                 return;
             }
 
-            // Fill the original address input with the selected address
-            addressInput.value = place.formatted_address;
+            // Fill the new input with the selected address
+            newInput.value = place.formatted_address;
             console.log("Selected Address:", place.formatted_address);
         });
 
@@ -60,10 +69,11 @@ function initializeAutocomplete() {
     }
 }
 
+
 // Initialize Google Maps API and Autocomplete
 window.initMap = function () {
     console.log("Google Maps API loaded successfully.");
-    initializeAutocomplete(); // Ensure PlaceAutocompleteElement is initialized when Maps API is ready
+    initializeAutocomplete();
 };
 
 
