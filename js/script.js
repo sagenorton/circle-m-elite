@@ -1380,52 +1380,103 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location, fina
     // Sort pit trucks by max capacity (largest trucks first)
     pitTrucks.sort((a, b) => b.max - a.max);
 
-    // Loop through pit trucks to fill the load
+    let groupedPitTrucks = {};
+
+    pitTrucks.forEach(truck => {
+        if (!groupedPitTrucks[truck.name]) {
+            groupedPitTrucks[truck.name] = {
+                truck: truck,
+                totalAmount: 0,
+                tripCount: 0,
+            };
+        }
+    });
+
     while (remaining > 0) {
         let bestPitTruck = pitTrucks.find(truck => remaining >= truck.min) || null;
-    
-        // Only assign to yard if no pit trucks can take the remaining load
+
+        // Handle overflow by assigning to the yard if no suitable pit truck is available
         if (!bestPitTruck) {
             console.warn(`Remaining ${remaining} tons does not meet any pit truck's minimum. Assigning to yard: ${finalClosestYard}`);
+            
             let yardAssignment = await assignToYard(
                 remaining,
                 materialInfo,
                 finalClosestYard,
                 distances,
                 addressInput,
-                true // Suppress logs for overflow yards
+                true // Suppress logs for overflow yard calculations
             );
-    
+
             if (!yardAssignment || yardAssignment.yardLoads.length === 0) {
                 console.error(`ERROR: No valid yard loads assigned for remaining ${remaining} tons.`);
                 return { pitLoads, yardLoads: [], totalCost: Infinity };
             }
-    
+
             yardLoads = yardAssignment.yardLoads;
             return { pitLoads, yardLoads, totalCost: yardAssignment.totalCost };
         }
-    
+
         let loadAmount = Math.min(bestPitTruck.max, remaining);
         remaining -= loadAmount;
-    
+
+        // Add to grouped data
+        groupedPitTrucks[bestPitTruck.name].totalAmount += loadAmount;
+        groupedPitTrucks[bestPitTruck.name].tripCount++;
+
         pitLoads.push({
             truckName: bestPitTruck.name,
             amount: loadAmount,
             rate: bestPitTruck.rate,
             max: bestPitTruck.max
         });
-    }    
+    }
+
+    console.log(`Completed Pit Load Calculation for: ${location.name}, remaining = ${remaining}`);
+    
+    let totalPitCost = 0;
+    let detailedPitCosts = [];
+
+    for (let truckName in groupedPitTrucks) {
+        let { truck, totalAmount, tripCount } = groupedPitTrucks[truckName];
+
+        // Calculate distances for this truck type
+        let distancesForTruck = await calculateDistances([
+            { origin: truck.closest_yard || finalClosestYard, destination: location.address },
+            { origin: location.address, destination: addressInput },
+            { origin: addressInput, destination: finalClosestYard }
+        ]);
+
+        let totalJourneyTime = (distancesForTruck[0]?.duration || 0) + (distancesForTruck[1]?.duration || 0) + (distancesForTruck[2]?.duration || 0);
+        totalJourneyTime = totalJourneyTime * 1.15 + (36 * tripCount); // Add load/unload time
+
+        // Calculate per unit and per load costs for this truck type
+        let costPerUnit = (((totalJourneyTime / 60) * truck.rate) / totalAmount) + (location.price || 0);
+        let costPerLoad = costPerUnit * totalAmount;
+
+        totalPitCost += costPerLoad;
+
+        detailedPitCosts.push({
+            truckName,
+            rate: truck.rate,
+            amount: totalAmount,
+            costPerUnit,
+            costPerLoad
+        });
+
+        console.log(`Truck: ${truckName}, Total Amount: ${totalAmount}, Trips: ${tripCount}, Cost Per Unit: ${costPerUnit.toFixed(2)}`);
+    }
 
     yardLoads = yardAssignment ? yardAssignment.yardLoads : [];
 
-    console.log(`Completed Pit Load Calculation for: ${location.name}, remaining = ${remaining}`);
-
-    return { 
-        pitLoads, 
-        yardLoads, 
-        totalCost: yardAssignment ? yardAssignment.totalCost : 0 
+    return {
+        pitLoads,
+        yardLoads,
+        totalCost: totalPitCost,
+        detailedPitCosts
     };
 }
+
 
 
 
