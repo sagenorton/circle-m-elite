@@ -1383,35 +1383,38 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location, fina
     // Loop through pit trucks to fill the load
     while (remaining > 0) {
         let bestPitTruck = pitTrucks.find(truck => remaining >= truck.min) || null;
-
-        // Handle overflow load if no suitable pit truck is available
+    
+        // Only assign to yard if no pit trucks can take the remaining load
         if (!bestPitTruck) {
-            console.warn(`Remaining ${remaining} tons does not meet any pit truck's minimum. Assigning to the yard: ${finalClosestYard}`);
-            
-            // Assign remaining load to the yard with suppressed logs
+            console.warn(`Remaining ${remaining} tons does not meet any pit truck's minimum. Assigning to yard: ${finalClosestYard}`);
             let yardAssignment = await assignToYard(
-                remaining, 
-                materialInfo, 
-                finalClosestYard, 
-                distances, 
-                addressInput, 
-                true // Suppress logs for overflow yard calculations
+                remaining,
+                materialInfo,
+                finalClosestYard,
+                distances,
+                addressInput,
+                true // Suppress logs for overflow yards
             );
-            yardLoads = yardAssignment ? yardAssignment.yardLoads : [];
-            return { pitLoads, yardLoads: yardAssignment.yardLoads, totalCost: yardAssignment.totalCost };
+    
+            if (!yardAssignment || yardAssignment.yardLoads.length === 0) {
+                console.error(`ERROR: No valid yard loads assigned for remaining ${remaining} tons.`);
+                return { pitLoads, yardLoads: [], totalCost: Infinity };
+            }
+    
+            yardLoads = yardAssignment.yardLoads;
+            return { pitLoads, yardLoads, totalCost: yardAssignment.totalCost };
         }
-
-        // Assign load to the best pit truck
+    
         let loadAmount = Math.min(bestPitTruck.max, remaining);
         remaining -= loadAmount;
-
+    
         pitLoads.push({
             truckName: bestPitTruck.name,
             amount: loadAmount,
             rate: bestPitTruck.rate,
             max: bestPitTruck.max
         });
-    }
+    }    
 
     yardLoads = yardAssignment ? yardAssignment.yardLoads : [];
 
