@@ -19,7 +19,7 @@ function loadGoogleMapsApi() {
 
     // Create and append the script asynchronously
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initMap`;
     script.async = true;
     script.defer = true;
     script.onload = () => console.log("Google Maps API successfully loaded.");
@@ -33,15 +33,16 @@ function initializeAutocomplete() {
     const addressInput = document.getElementById("address");
 
     if (addressInput) {
-        // Create a new PlaceAutocompleteElement
+        // Create the PlaceAutocompleteElement
         const autocompleteElement = document.createElement('gmp-place-autocomplete');
         autocompleteElement.id = 'autocomplete';
         autocompleteElement.setAttribute('fields', 'formatted_address,geometry');
+        autocompleteElement.setAttribute('inputmode', 'text'); // To allow input
         
-        // Insert the autocomplete element right before the address input
-        addressInput.parentNode.insertBefore(autocompleteElement, addressInput);
+        // Replace the original input with the autocomplete element
+        addressInput.parentNode.insertBefore(autocompleteElement, addressInput.nextSibling);
 
-        // Add event listener for place selection
+        // Add event listener to listen for the selection
         autocompleteElement.addEventListener('gmp-placeselect', (event) => {
             const place = event.detail.place;
 
@@ -50,7 +51,7 @@ function initializeAutocomplete() {
                 return;
             }
 
-            // Auto-fill the original address input field with the selected place
+            // Fill the original address input with the selected address
             addressInput.value = place.formatted_address;
             console.log("Selected Address:", place.formatted_address);
         });
@@ -59,12 +60,12 @@ function initializeAutocomplete() {
     }
 }
 
-
 // Initialize Google Maps API and Autocomplete
 window.initMap = function () {
     console.log("Google Maps API loaded successfully.");
     initializeAutocomplete(); // Ensure PlaceAutocompleteElement is initialized when Maps API is ready
 };
+
 
 
 
