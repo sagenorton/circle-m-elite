@@ -33,39 +33,32 @@ function initializeAutocomplete() {
     const addressInput = document.getElementById("address");
 
     if (addressInput) {
-        // Initialize Autocomplete with the address input field
         const autocomplete = new google.maps.places.Autocomplete(addressInput, {
-            types: ["geocode"],
+            types: ["geocode"] // Suggest only address locations
         });
 
-        // Add event listener for place selection
+        // Add event listener to handle when a user selects an address
         autocomplete.addListener("place_changed", function () {
             const place = autocomplete.getPlace();
-
             if (!place.geometry) {
                 console.error("No details available for input: " + addressInput.value);
                 return;
             }
-
             // Auto-fill the address input field with the selected place
             addressInput.value = place.formatted_address;
             console.log("Selected Address:", place.formatted_address);
         });
 
-        console.log("Google Places Autocomplete initialized and ready.");
-    } else {
-        console.error("Address input not found.");
+        console.log("Google Places Autocomplete initialized and selection event added.");
     }
+
 }
-
-
 
 // Initialize Google Maps API and Autocomplete
 window.initMap = function () {
     console.log("Google Maps API loaded successfully.");
-    initializeAutocomplete();
+    initializeAutocomplete(); // Ensure autocomplete is initialized when Maps API is ready
 };
-
 
 
 
@@ -1127,7 +1120,7 @@ async function calculateYardTruckLoads(remaining, materialInfo, location) {
 
     if (!location || !location.trucks || !Array.isArray(location.trucks)) {
         console.error(`ERROR: Invalid or missing truck data for ${location?.name || 'undefined location'}.`);
-        return { yardLoads, totalYardCost: 0, remaining };
+        return { yardLoads, remaining };
     }
 
     location.trucks.forEach(truckType => {
@@ -1137,47 +1130,37 @@ async function calculateYardTruckLoads(remaining, materialInfo, location) {
 
     if (yardTrucks.length === 0) {
         console.error(`No yard trucks available for ${location.name}.`);
-        return { yardLoads, totalYardCost: 0, remaining };
+        return { yardLoads, remaining };
     }
 
     yardTrucks.sort((a, b) => b.max - a.max);
 
-    // Track total yard cost
-    let totalYardCost = 0;
-
     while (remaining > 0) {
         let bestYardTruck = yardTrucks.find(truck => remaining >= truck.min);
-
+    
         if (!bestYardTruck) {
             console.warn(`No suitable yard truck found for ${remaining} ${materialInfo.sold_by}s.`);
             break;
         }
-
+    
         let loadAmount = Math.floor(Math.min(bestYardTruck.max, remaining));
         remaining -= loadAmount;
-
-        // Calculate cost per truck load from Yard
-        let loadCost = loadAmount * location.price + loadAmount * bestYardTruck.rate;
-        totalYardCost += loadCost;
-
+    
         yardLoads.push({
             truckName: bestYardTruck.name,
             amount: loadAmount,
             rate: bestYardTruck.rate,
-            max: bestYardTruck.max,
-            loadCost: loadCost.toFixed(2)
+            max: bestYardTruck.max
         });
-
+    
         if (remaining < bestYardTruck.min && remaining > 0) {
             console.warn(`Remaining load ${remaining} is too small for any available truck.`);
-            break; // Stop attempting more loads since no valid truck can take the remainder.
+            remaining = 0;
         }
-    }
-
+    }    
+    
     console.log(`Yard Truck Loads for ${location.name}:`, yardLoads);
-    console.log(`Total Yard Cost: $${totalYardCost.toFixed(2)}, Remaining Load: ${remaining} yards`);
-
-    return { yardLoads, totalYardCost, remaining };
+    return { yardLoads, remaining };
 }
 
 
@@ -1250,7 +1233,9 @@ async function computeYardCosts(truckLoadInfo, yard, distances, addressInput, ma
             amount: load.amount,
             costPerUnit,
             costPerLoad,
-            max: load.max
+            max: load.max,
+            source: 'yard',
+            sourceName: yard.name
         });
 
         totalCost += costPerLoad;
@@ -1320,7 +1305,7 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location) {
 
     if (!location || !location.trucks || !Array.isArray(location.trucks)) {
         console.error(`ERROR: Invalid or missing truck data for ${location?.name || 'undefined location'}.`);
-        return { pitLoads, totalCost: 0, remainingLoad: 0 };
+        return { pitLoads, totalCost: 0 };
     }
 
     let pitTrucks = [];
@@ -1331,13 +1316,10 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location) {
 
     if (pitTrucks.length === 0) {
         console.error(`No pit trucks available for ${location.name}.`);
-        return { pitLoads, totalCost: 0, remainingLoad: remaining };
+        return { pitLoads, totalCost: 0 };
     }
 
     pitTrucks.sort((a, b) => b.max - a.max);
-
-    // Track total pit cost
-    let totalPitCost = 0;
 
     while (remaining > 0) {
         let bestPitTruck = pitTrucks.find(truck => remaining >= truck.min);
@@ -1349,30 +1331,28 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location) {
     
         let loadAmount = Math.floor(Math.min(bestPitTruck.max, remaining));
         remaining -= loadAmount;
-
-        // Calculate cost per truck load from PIT
-        let loadCost = loadAmount * location.price + loadAmount * bestPitTruck.rate;
-        totalPitCost += loadCost;
-
+    
         pitLoads.push({
             truckName: bestPitTruck.name,
             amount: loadAmount,
             rate: bestPitTruck.rate,
-            max: bestPitTruck.max,
-            loadCost: loadCost.toFixed(2)
+            max: bestPitTruck.max
         });
-
+    
         if (remaining < bestPitTruck.min && remaining > 0) {
             console.warn(`Remaining load ${remaining} is too small for any available truck.`);
-            break; // Stop attempting more loads since no valid truck can take the remainder.
+            remaining = 0;
         }
+    } 
+    
+    if (location.name === "Idaho Forest Group PIT" && remaining > 0) {
+        console.warn(`Remaining load of ${remaining} exceeds pit capacity. Sending remaining amount to closest yard.`);
+        location.remainingAmount = remaining;
+        remaining = 0; // Stop the pit loop and let the yard handle the remaining load
     }
 
-    // Return remaining load for yard handling (if applicable)
     console.log(`Completed Pit Load Calculation for: ${location.name}`);
-    console.log(`Total Pit Cost: $${totalPitCost.toFixed(2)}, Remaining Load: ${remaining} yards`);
-    
-    return { pitLoads, totalCost: totalPitCost, remainingLoad: remaining };
+    return { pitLoads };
 }
 
 
@@ -1453,7 +1433,9 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
         rate: group.rate,
         costPerUnit,
         costPerLoad,
-        max: group.max
+        max: group.max,
+        source: pit.closest_yard ? 'closest_yard' : 'pit',
+        sourceName: pit.name
     });
 
     totalCost += costPerLoad;
@@ -1503,7 +1485,31 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
     console.log(`  Total Material from Pit: ${totalAmount} ${materialInfo.sold_by}s`);
     console.log(`  Base Material Price: $${pit.price}`);
     console.log(`\nFinal Total Pit Cost: $${totalCost.toFixed(2)}`);
-    console.log("===================================");    
+    console.log("==================================="); 
+    
+    if (pit.name === "Idaho Forest Group PIT" && pit.remainingAmount > 0) {
+        console.log(`Handling remaining load of ${pit.remainingAmount} ${materialInfo.sold_by}s from closest yard.`);
+
+        const closestYard = yardLocations[pit.closest_yard];
+
+        // Calculate remaining load at the closest yard
+        let yardLoadData = await calculateYardTruckLoads(pit.remainingAmount, materialInfo, {
+            name: finalClosestYard,
+            address: closestYard,
+            trucks: materialInfo.locations.find(l => l.name === finalClosestYard).trucks
+        });
+
+        let yardDistances = await calculateDistances([{ origin: closestYard, destination: addressInput }]);
+        let yardCosts = await computeYardCosts(yardLoadData.yardLoads, { name: finalClosestYard, address: closestYard }, yardDistances, addressInput, materialInfo);
+
+        if (yardCosts.totalCost > 0) {
+            console.log(`Additional Yard Cost for Remaining Load: $${yardCosts.totalCost.toFixed(2)}`);
+            totalCost += yardCosts.totalCost;
+            detailedCosts = [...detailedCosts, ...yardCosts.detailedCosts];
+        }
+
+        pit.remainingAmount = 0; // Reset remaining amount after calculation
+    }
 
     return { totalCost, detailedCosts, location: pit, pitLoads };
 }
@@ -1541,6 +1547,7 @@ async function calculateCost() {
     console.log(`Closest Yard Address: ${finalClosestYardAddress}`);
     console.log(`Drive Time from Drop-off to Yard: ${driveTimeDropToYard} min`);
 
+
     // Use yardLocations ONLY to find the correct yard
     if (!yardLocations[finalClosestYard]) {
         console.error(`ERROR: Yard location not found in yardLocations for ${finalClosestYard}.`);
@@ -1555,7 +1562,7 @@ async function calculateCost() {
 
         if (isYard) {
             // Calculate yard truck loads
-            let { yardLoads, totalYardCost } = await calculateYardTruckLoads(amountNeeded, materialInfo, location);
+            let { yardLoads } = await calculateYardTruckLoads(amountNeeded, materialInfo, location);
 
             // Calculate distances
             let distances = await calculateDistances([{ origin: location.address, destination: addressInput }]);
@@ -1563,75 +1570,64 @@ async function calculateCost() {
             // Compute yard costs
             let yardCosts = await computeYardCosts(yardLoads, location, distances, addressInput, materialInfo);
             costResults.push(yardCosts);
-            console.log(`✅ Completed Yard Calculation for: ${location.name}, total cost = $${yardCosts.totalCost.toFixed(2)}`);
-        } 
-        else {
-            // Calculate pit truck loads
-            let { pitLoads, remaining } = await calculatePitTruckLoads(amountNeeded, materialInfo, location);
+            console.log(`Completed calculation for: ${location.name}, total cost = $${yardCosts.totalCost.toFixed(2)}`);
 
+        } else {
+            let { pitLoads } = await calculatePitTruckLoads(amountNeeded, materialInfo, location);
+        
             let distances = await calculateDistances([
                 { origin: location.closest_yard, destination: location.address },
                 { origin: location.address, destination: addressInput },
                 { origin: addressInput, destination: finalClosestYardAddress }
             ]);
-
+        
             if (pitLoads.length > 0) {
                 let pitCosts = await computePitCosts(
-                    pitLoads,
-                    location,
-                    distances,
+                    pitLoads, 
+                    location, 
+                    distances, 
                     addressInput,
                     materialInfo,
                     amountNeeded
                 );
-
+        
                 if (pitCosts.totalCost > 0) {
-                    console.log(`✅ Completed Pit Calculation for: ${location.name}, total cost = $${pitCosts.totalCost.toFixed(2)}`);
+                    costResults.push(pitCosts);
+                    console.log(`Completed calculation for: ${location.name}, total cost = $${pitCosts.totalCost.toFixed(2)}`);
+                }
 
-                    // Handle remaining load for eligible materials
-                    if (remaining > 0 && ["aged_dark_fines", "organic_cert_garden_soil"].includes(selectedMaterial)) {
-                        console.log(`⚠️ Remaining load of ${remaining} ${unit} not filled by pit. Checking yard options...`);
+                if (location.name === "Idaho Forest Group PIT" && location.remainingAmount > 0) {
+                    console.log(`Handling remaining load of ${location.remainingAmount} ${materialInfo.sold_by}s from closest yard.`);
 
-                        // Check yard to fulfill remaining load
-                        let yardForPit = yardLocations[finalClosestYard];
-                        let { yardLoads, totalYardCost } = await calculateYardTruckLoads(remaining, materialInfo, yardForPit);
+                    // Fetch the closest yard to handle remaining load
+                    const closestYard = yardLocations[location.closest_yard];
 
-                        if (yardLoads.length > 0) {
-                            let yardDistances = await calculateDistances([
-                                { origin: yardForPit.address, destination: addressInput }
-                            ]);
+                    // Calculate remaining load from the closest yard
+                    let yardLoadData = await calculateYardTruckLoads(location.remainingAmount, materialInfo, {
+                        name: finalClosestYard,
+                        address: closestYard,
+                        trucks: materialInfo.locations.find(l => l.name === finalClosestYard).trucks
+                    });
 
-                            let yardCosts = await computeYardCosts(
-                                yardLoads,
-                                yardForPit,
-                                yardDistances,
-                                addressInput,
-                                materialInfo
-                            );
+                    let yardDistances = await calculateDistances([{ origin: closestYard, destination: addressInput }]);
+                    let yardCosts = await computeYardCosts(
+                        yardLoadData.yardLoads,
+                        { name: finalClosestYard, address: closestYard },
+                        yardDistances,
+                        addressInput,
+                        materialInfo
+                    );
 
-                            // Combine Pit and Yard Costs
-                            let combinedCost = pitCosts.totalCost + yardCosts.totalCost;
-                            console.log(`✅ Combined Pit + Yard Costs: $${combinedCost.toFixed(2)}`);
-                            costResults.push({
-                                location: {
-                                    name: `${location.name} + ${yardForPit.name}`,
-                                    address: `${location.address} + ${yardForPit.address}`,
-                                },
-                                totalCost: combinedCost,
-                                detailedCosts: [...pitCosts.detailedCosts, ...yardCosts.detailedCosts]
-                            });
-                        } 
-                        else {
-                            console.warn(`⚠️ No suitable yard truck found to fulfill remaining load of ${remaining} ${unit}.`);
-                            costResults.push(pitCosts); // Fallback to pit-only cost
-                        }
-                    } 
-                    else {
-                        costResults.push(pitCosts);
+                    if (yardCosts.totalCost > 0) {
+                        console.log(`Additional Yard Cost for Remaining Load: $${yardCosts.totalCost.toFixed(2)}`);
+                        costResults.push(yardCosts);
                     }
+
+                    // Reset remaining amount after handling
+                    location.remainingAmount = 0;
                 }
             }
-        }
+        }        
     }
 
     costResults = costResults.filter(result => result && !isNaN(result.totalCost));
@@ -1643,10 +1639,11 @@ async function calculateCost() {
 
     // Find the cheapest total cost from the results
     let cheapest = costResults.reduce((min, curr) => (curr.totalCost < min.totalCost ? curr : min));
-    console.log(`✅ Cheapest Option: ${cheapest.location.name}, Total Cost: $${cheapest.totalCost.toFixed(2)}`);
+    console.log(`Cheapest Option: ${cheapest.location.name}, Total Cost: $${cheapest.totalCost.toFixed(2)}`);
 
     // Display the results
     displayResults(cheapest.totalCost, cheapest.detailedCosts, unit);
+    
 }
 
 
@@ -1703,7 +1700,8 @@ function displayResults(totalCost, detailedCosts, unit) {
                 amount: load.amount,
                 rate: load.rate,
                 costPerUnit: load.costPerUnit,
-                count: 0
+                count: 0,
+                source: load.source || 'unknown'
             };
         }
 
@@ -1717,6 +1715,20 @@ function displayResults(totalCost, detailedCosts, unit) {
         detail.textContent = `${truck.count} ${truck.truckName}(s) of ${truck.amount} ${unit}s at $${truck.costPerUnit.toFixed(2)} per ${unit}`;
         detailSection.appendChild(detail);
     });
+
+    // Log grouped truck information with sourceName (console only)
+    console.log(`Grouped Truck Load Summary:`);
+    Object.values(groupedTrucks).forEach(truck => {
+        console.log(`  • ${truck.count} ${truck.truckName}(s) of ${truck.amount} ${unit}s at $${truck.costPerUnit.toFixed(2)} per ${unit} (from ${truck.sourceName})`);
+    });
+
+    // Check for remaining loads handled by closest yard and log it (console only)
+    const remainingLoads = detailedCosts.filter(load => load.source === 'closest_yard');
+    if (remainingLoads.length > 0) {
+        const remainingTotal = remainingLoads.reduce((sum, load) => sum + load.costPerLoad, 0);
+        const yardName = remainingLoads[0]?.sourceName || 'Unknown Yard';
+        console.log(`Additional Load of ${remainingLoads.length} truck(s) handled by ${yardName}. Total Additional Cost: $${remainingTotal.toFixed(2)}`);
+    }
 
     // Prevent NaN or undefined total cost issues
     if (isNaN(totalCost) || totalCost === undefined) {
