@@ -1614,6 +1614,7 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, yardLoads
     console.log(`  Duration/Distance: ${driveTimePitToDrop} min`);
     console.log(`  Ending at: ${finalClosestYard}`);
     console.log(`  Duration/Distance: ${driveTimeDropToYard} min`);
+    console.log(`  Base Price: $${pit.price.toFixed(2)}`);
     console.log(`\nFinal Total: $${totalCost.toFixed(2)}`);
     console.log("===================================");
 
