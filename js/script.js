@@ -1356,28 +1356,6 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location, fina
         trucks.forEach(truck => pitTrucks.push({ ...truck, type: truckType }));
     });
 
-    // Handle the case where no valid pit trucks are available or the remaining load is below the minimum
-    if (pitTrucks.length === 0 || remaining < Math.min(...pitTrucks.map(truck => truck.min))) {
-        console.warn(`Remaining ${remaining} tons does not meet any pit truck's minimum. Assigning to yard: ${finalClosestYard}`);
-        
-        // Assign to yard with suppressLogs = true to prevent duplicate yard logs
-        let yardAssignment = await assignToYard(
-            remaining, 
-            materialInfo, 
-            finalClosestYard, 
-            distances, 
-            addressInput, 
-            true // Suppress logs for overflow yards
-        );
-
-        if (!yardAssignment || yardAssignment.yardLoads.length === 0) {
-            console.error(`ERROR: No valid yard loads assigned for remaining ${remaining} tons.`);
-            return { pitLoads: [], yardLoads: [], totalCost: Infinity };
-        }
-
-        return { pitLoads: [], yardLoads: yardAssignment.yardLoads, totalCost: yardAssignment.totalCost };
-    }
-
     // Sort pit trucks by max capacity (largest trucks first)
     pitTrucks.sort((a, b) => b.max - a.max);
 
@@ -1385,23 +1363,15 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location, fina
     let groupedLoads = {};
 
     while (remaining > 0) {
-        let bestPitTruck = pitTrucks.find(truck => remaining >= truck.min) || null;
+        let bestPitTruck = pitTrucks.find(truck => remaining >= truck.min);
 
-        // Handle overflow load if no suitable pit truck is available
+        // If no suitable pit truck is found, use the largest available truck to maximize pit usage
         if (!bestPitTruck) {
-            console.warn(`Remaining ${remaining} tons does not meet any pit truck's minimum. Assigning to the yard: ${finalClosestYard}`);
-            
-            // Assign remaining load to the yard with suppressed logs
-            let yardAssignment = await assignToYard(
-                remaining, 
-                materialInfo, 
-                finalClosestYard, 
-                distances, 
-                addressInput, 
-                true // Suppress logs for overflow yard calculations
-            );
-            yardLoads = yardAssignment ? yardAssignment.yardLoads : [];
-            return { pitLoads, yardLoads: yardAssignment.yardLoads, totalCost: yardAssignment.totalCost };
+            bestPitTruck = pitTrucks[0]; // Use the largest truck available
+            if (remaining < bestPitTruck.min) {
+                console.warn(`Remaining ${remaining} tons does not meet any pit truck's minimum. Assigning to the yard: ${finalClosestYard}`);
+                break; // Exit the loop to assign the remaining load to a yard
+            }
         }
 
         // Assign load to the best pit truck
@@ -1425,7 +1395,19 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location, fina
         pitLoads = pitLoads.concat(groupedLoads[truckName]);
     }
 
-    yardLoads = yardAssignment ? yardAssignment.yardLoads : [];
+    // If there is still remaining load, assign it to the yard
+    if (remaining > 0) {
+        console.warn(`Remaining ${remaining} tons does not meet any pit truck's minimum. Assigning to the yard: ${finalClosestYard}`);
+        yardAssignment = await assignToYard(
+            remaining,
+            materialInfo,
+            finalClosestYard,
+            distances,
+            addressInput,
+            true // Suppress logs for overflow yard calculations
+        );
+        yardLoads = yardAssignment ? yardAssignment.yardLoads : [];
+    }
 
     console.log(`Completed Pit Load Calculation for: ${location.name}, remaining = ${remaining}`);
 
