@@ -1740,7 +1740,7 @@ async function calculateCost() {
             costResults.push(yardCosts);
         } else {
             let pitResult = await calculatePitTruckLoads(amountNeeded, materialInfo, location, finalClosestYard, [], addressInput);
-            let { pitLoads, yardLoads, totalCost } = pitResult;
+            let { pitLoads, yardLoads, totalCost, groupedPitTrucks } = pitResult;
 
             if (pitLoads.length > 0) {
                 let distances = await calculateDistances([
