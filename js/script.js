@@ -1580,11 +1580,10 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, yardLoads
         return;
     }
 
-    // Correct total load amount and trip count calculation
-    const totalLoadAmount = Object.values(groupedPitTrucks).reduce((sum, truck) => sum + truck.totalAmount, 0);
+    // Correct trip count calculation
     const tripCount = Object.values(groupedPitTrucks).reduce((sum, truck) => sum + truck.tripCount, 0);
 
-    // Calculate the total drive time for all trips
+    // Calculate the total drive time for all trips only once
     let totalDriveTime = driveTimeYardToPit + (driveTimePitToDrop * (tripCount * 2 - 1)) + driveTimeDropToYard;
 
     // Adjust the travel time with a multiplier
@@ -1593,26 +1592,20 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, yardLoads
     // Calculate the final total journey time including load/unload time
     let totalJourneyTime = adjustedTravelTime + (36 * tripCount);
 
+    // Save the last journey time
     lastJourneyTime = totalJourneyTime;
 
     // Calculate the cost for each pit load based on grouped truck types
     for (let truckName in groupedPitTrucks) {
-        let { truck, totalAmount, tripCount, rate } = groupedPitTrucks[truckName];
+        let { totalAmount, tripCount, rate } = groupedPitTrucks[truckName];
 
-        // Calculate distances for this truck type
-        let distancesForTruck = await calculateDistances([
-            { origin: truck.closest_yard || finalClosestYard, destination: pit.address },
-            { origin: pit.address, destination: addressInput },
-            { origin: addressInput, destination: finalClosestYard }
-        ]);
+        // Skip zero loads to prevent invalid calculations
+        if (!totalAmount || isNaN(totalAmount) || totalAmount <= 0) {
+            console.warn(`Skipping ${truckName} due to zero load.`);
+            continue;
+        }
 
-        // Sum journey time for this truck type
-        let totalJourneyTime = (distancesForTruck[0]?.duration || 0) +
-                               (distancesForTruck[1]?.duration || 0) +
-                               (distancesForTruck[2]?.duration || 0);
-        totalJourneyTime = totalJourneyTime * 1.15 + (36 * tripCount); // Add load/unload time
-
-        // Correct: Divide by grouped totalAmount for this truck type
+        // Divide by grouped totalAmount for this truck type
         let costPerUnit = (((totalJourneyTime / 60) * rate) / totalAmount) + (pit.price || 0);
 
         // Calculate total cost for this truck type
@@ -1627,10 +1620,14 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, yardLoads
             costPerUnit,
             costPerLoad
         });
+
+        // Log per truck type correctly
+        console.log(`Truck: ${truckName}, Total Amount: ${totalAmount}, Trips: ${tripCount}, Cost Per Unit: ${costPerUnit.toFixed(2)}`);
     }
 
     let yardCostData = null;
 
+    // Handle overflow yard loads separately if they exist
     if (yardLoads.length > 0) {
         console.log(`Processing overflow yard loads separately to ensure correct yard calculation.`);
 
@@ -1666,12 +1663,15 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, yardLoads
     console.log(`  Truck(s):`);
     for (let truckName in groupedPitTrucks) {
         let { totalAmount, tripCount, rate } = groupedPitTrucks[truckName];
-        console.log(`    - ${tripCount} ${truckName}(s) of ${totalAmount} ${materialInfo.sold_by}s at $${rate.toFixed(2)} per ${materialInfo.sold_by}`);
+        if (totalAmount > 0) {
+            console.log(`    - ${tripCount} ${truckName}(s) of ${totalAmount} ${materialInfo.sold_by}s at $${rate.toFixed(2)} per ${materialInfo.sold_by}`);
+        }
     }
 
     console.log(`\nFinal Total: $${totalCost.toFixed(2)}`);
     console.log("===================================");
 
+    // Return the final results
     return {
         totalCost,
         detailedCosts,
