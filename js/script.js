@@ -1437,8 +1437,7 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
         rate: group.rate,
         costPerUnit,
         costPerLoad,
-        max: group.max,
-        max: load.max
+        max: group.max
     });
 
     totalCost += costPerLoad;
