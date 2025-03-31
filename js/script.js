@@ -1411,7 +1411,7 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
     const grouped = {};
 
     pitLoads.forEach(load => {
-    const key = `${load.truckName}-${load.max}`;
+    const key = `${load.truckName}-${load.rate}`;
     if (!grouped[key]) {
         grouped[key] = {
         truckName: load.truckName,
@@ -1424,7 +1424,7 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
     });
 
     Object.values(grouped).forEach(group => {
-    const tripCount = Math.ceil(group.totalAmount / group.max);
+    const tripCount = group.max ? Math.ceil(group.totalAmount / group.max) : 0;
     const driveTime = driveTimeYardToPit + (driveTimePitToDrop * (tripCount * 2 - 1)) + driveTimeDropToYard;
     const totalJourneyTime = (driveTime * 1.15) + (36 * tripCount);
   
@@ -1437,7 +1437,8 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
         rate: group.rate,
         costPerUnit,
         costPerLoad,
-        max: group.max
+        max: group.max,
+        max: load.max
     });
 
     totalCost += costPerLoad;
@@ -1650,7 +1651,7 @@ function displayResults(totalCost, detailedCosts, unit) {
             };
         }
 
-        const tripsNeeded = Math.ceil(load.amount / load.max);
+        const tripsNeeded = load.max ? Math.ceil(load.amount / load.max) : 1;
         groupedTrucks[key].count += tripsNeeded;
     });
 
