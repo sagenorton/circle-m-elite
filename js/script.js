@@ -1449,55 +1449,47 @@ async function assignToYard(remaining, materialInfo, finalClosestYard, distances
     }
 
     // Find which yards actually have this material
-    const availableYards = materialInfo.locations.filter(loc => loc.name.includes("Yard"));
+    const availableYards = materialInfo.locations.filter(loc => loc.name.toLowerCase().includes("yard"));
 
     // Check if `finalClosestYard` has the material
-    const finalClosestYardHasMaterial = availableYards.some(yard => yard.name === finalClosestYard);
+    const finalClosestYardLocation = availableYards.find(yard => yard.name === finalClosestYard);
 
     // If `finalClosestYard` doesn’t have it, find another yard that does
-    let assignedYard = finalClosestYardHasMaterial ? finalClosestYard : null;
+    let assignedYard = finalClosestYardLocation || availableYards[0];
 
     if (!assignedYard) {
-        // Pick the only other yard available
-        let alternativeYard = availableYards.find(yard => yard.name !== finalClosestYard);
-
-        if (alternativeYard) {
-            assignedYard = alternativeYard.name;
-            if (!suppressLogs) {
-                console.log(`${finalClosestYard} does NOT have this material. Using alternative yard: ${assignedYard}`);
-            }
-        } else {
-            if (!suppressLogs) {
-                console.error(`ERROR: No available yards carry this material.`);
-            }
-            return { yardLoads: [], totalCost: Infinity };
-        }
-    }
-
-    // Assign the remaining load to the correct yard
-    if (!suppressLogs) {
-        console.log(`Assigning remaining ${remaining} tons to: ${assignedYard}`);
-    }
-    let yardLocation = materialInfo.locations.find(loc => loc.name === assignedYard);
-    if (!yardLocation) {
         if (!suppressLogs) {
-            console.error(`ERROR: Could not find yard address for ${assignedYard}.`);
+            console.error(`ERROR: No available yards carry this material.`);
         }
         return { yardLoads: [], totalCost: Infinity };
     }
 
     // Compute the yard truck loads
-    let yardResult = await calculateYardTruckLoads(remaining, materialInfo, yardLocation);
+    let yardResult = await calculateYardTruckLoads(remaining, materialInfo, assignedYard);
 
-    // Compute costs for the assigned yard, passing suppressLogs flag
+    if (!yardResult || yardResult.yardLoads.length === 0) {
+        if (!suppressLogs) {
+            console.error(`ERROR: No valid yard loads assigned for remaining ${remaining} tons.`);
+        }
+        return { yardLoads: [], totalCost: Infinity };
+    }
+
+    // Compute costs for the assigned yard
     let yardCostData = await computeYardCosts(
         yardResult.yardLoads,
-        yardLocation,
+        assignedYard,
         distances,
         addressInput,
         materialInfo,
         suppressLogs // Pass suppressLogs to suppress assigned yard logs
     );
+
+    if (!yardCostData || isNaN(yardCostData.totalCost)) {
+        if (!suppressLogs) {
+            console.error(`ERROR: Failed to compute costs for yard ${assignedYard.name}.`);
+        }
+        return { yardLoads: [], totalCost: Infinity };
+    }
 
     return {
         yardLoads: yardResult.yardLoads,
