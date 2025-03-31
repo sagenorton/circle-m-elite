@@ -1397,7 +1397,6 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location, fina
 
     // If there is still remaining load, assign it to the yard
     if (remaining > 0) {
-        console.warn(`Remaining ${remaining} tons does not meet any pit truck's minimum. Assigning to the yard: ${finalClosestYard}`);
         yardAssignment = await assignToYard(
             remaining,
             materialInfo,
