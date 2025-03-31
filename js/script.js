@@ -180,7 +180,7 @@ const materialData = {
         "locations": [
             { "name": "I90 Yard", "address": "1820 N University Rd, Spokane Valley, WA 99206", "price": 28.50, "trucks": ["truck_A", "truck_B", "truck_C"] },
             { "name": "Hawthorne Yard", "address": "1208 E Hawthorne Rd, Spokane, WA 99217", "price": 29.00, "trucks": ["truck_A", "truck_B", "truck_C"] },
-            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 18.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_D"] }
+            { "name": "Idaho Forest Group PIT", "address": "4447 E Chilco Rd, Athol, ID 83801", "price": 18.00, "closest_yard": "1820 N University Rd, Spokane Valley, WA 99206", "trucks": ["truck_A", "truck_B", "truck_C", "truck_D"] }
         ],
         "truck_A": [
             {"name": "Small Truck", "min": 1, "max": 8, "rate": 140}
@@ -1135,36 +1135,29 @@ async function calculateYardTruckLoads(remaining, materialInfo, location) {
 
     yardTrucks.sort((a, b) => b.max - a.max);
 
-
     while (remaining > 0) {
-        // Find the best truck that fits the remaining load or fallback to smallest
         let bestYardTruck = yardTrucks.find(truck => remaining >= truck.min);
-
-        // Fallback if no truck fits perfectly but remaining can fit within max
-        if (!bestYardTruck && remaining > 0) {
-            bestYardTruck = yardTrucks.find(truck => remaining <= truck.max);
-        }
-
-        // FINAL FALLBACK: Assign to the smallest truck only if no valid truck is found
+    
         if (!bestYardTruck) {
-            console.warn(`No exact fit for ${remaining} remaining. Assigning to the smallest truck available.`);
-            bestYardTruck = yardTrucks[yardTrucks.length - 1]; // Use the smallest truck as a last resort
+            console.warn(`No suitable yard truck found for ${remaining} ${materialInfo.sold_by}s.`);
+            break;
         }
-
-
-        let loadAmount = Math.min(bestYardTruck.max, remaining);
+    
+        let loadAmount = Math.floor(Math.min(bestYardTruck.max, remaining));
         remaining -= loadAmount;
-
+    
         yardLoads.push({
             truckName: bestYardTruck.name,
             amount: loadAmount,
-            rate: bestYardTruck.rate
+            rate: bestYardTruck.rate,
+            max: bestYardTruck.max
         });
-
-        if (remaining <= 0) {
-            break;
+    
+        if (remaining < bestYardTruck.min && remaining > 0) {
+            console.warn(`Remaining load ${remaining} is too small for any available truck.`);
+            remaining = 0;
         }
-    }
+    }    
     
     console.log(`Yard Truck Loads for ${location.name}:`, yardLoads);
     return { yardLoads, remaining };
@@ -1327,33 +1320,28 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location) {
     pitTrucks.sort((a, b) => b.max - a.max);
 
     while (remaining > 0) {
-        // Find the best truck that can handle the remaining load
         let bestPitTruck = pitTrucks.find(truck => remaining >= truck.min);
-
-        // Fallback if no truck fits perfectly but remaining fits within any truck's max
-        if (!bestPitTruck && remaining > 0) {
-            bestPitTruck = pitTrucks.find(truck => remaining <= truck.max);
-        }
-
-        // FINAL FALLBACK — Assign to the smallest truck if no suitable truck is found
+    
         if (!bestPitTruck) {
-            console.warn(`No exact fit for ${remaining} remaining. Assigning to the smallest truck available.`);
-            bestPitTruck = pitTrucks[pitTrucks.length - 1]; // Assign smallest truck
+            console.warn(`No suitable pit truck found for ${remaining} ${materialInfo.sold_by}s.`);
+            break;
         }
-
-        let loadAmount = Math.min(bestPitTruck.max, remaining);
+    
+        let loadAmount = Math.floor(Math.min(bestPitTruck.max, remaining));
         remaining -= loadAmount;
-
+    
         pitLoads.push({
             truckName: bestPitTruck.name,
             amount: loadAmount,
-            rate: bestPitTruck.rate
+            rate: bestPitTruck.rate,
+            max: bestPitTruck.max
         });
-
-        if (remaining <= 0) {
-            break;
+    
+        if (remaining < bestPitTruck.min && remaining > 0) {
+            console.warn(`Remaining load ${remaining} is too small for any available truck.`);
+            remaining = 0;
         }
-    } 
+    }    
 
     console.log(`Completed Pit Load Calculation for: ${location.name}`);
     return { pitLoads };
@@ -1411,7 +1399,7 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
     const grouped = {};
 
     pitLoads.forEach(load => {
-    const key = `${load.truckName}-${load.rate}`;
+    const key = `${load.truckName}-${load.max}`;
     if (!grouped[key]) {
         grouped[key] = {
         truckName: load.truckName,
@@ -1424,7 +1412,7 @@ async function computePitCosts(pitLoads, pit, distances, addressInput, materialI
     });
 
     Object.values(grouped).forEach(group => {
-    const tripCount = group.max ? Math.ceil(group.totalAmount / group.max) : 0;
+    const tripCount = Math.ceil(group.totalAmount / group.max);
     const driveTime = driveTimeYardToPit + (driveTimePitToDrop * (tripCount * 2 - 1)) + driveTimeDropToYard;
     const totalJourneyTime = (driveTime * 1.15) + (36 * tripCount);
   
@@ -1638,7 +1626,8 @@ function displayResults(totalCost, detailedCosts, unit) {
     const groupedTrucks = {};
 
     detailedCosts.forEach(load => {
-        const key = `${load.truckName}-${load.rate}`;
+        // Corrected grouping key to include truck name, amount, and rate
+        const key = `${load.truckName}-${load.amount}-${load.rate}`;
         
         if (!groupedTrucks[key]) {
             groupedTrucks[key] = {
@@ -1650,8 +1639,8 @@ function displayResults(totalCost, detailedCosts, unit) {
             };
         }
 
-        const tripsNeeded = load.max ? Math.ceil(load.amount / load.max) : 1;
-        groupedTrucks[key].count += tripsNeeded;
+        // Increment count properly to match console output
+        groupedTrucks[key].count += 1;
     });
 
     // Correctly display each truck and amount as shown in the console
