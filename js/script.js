@@ -1135,36 +1135,28 @@ async function calculateYardTruckLoads(remaining, materialInfo, location) {
 
     yardTrucks.sort((a, b) => b.max - a.max);
 
+
     while (remaining > 0) {
-        // Find the best truck that fits the remaining load
-        let bestYardTruck = yardTrucks.find(truck => remaining >= truck.min);
+        let bestYardTruck = yardTrucks.find(truck => remaining >= truck.min) || yardTrucks[0];
 
-        // Fallback to the smallest truck if no truck fits perfectly
-        if (!bestYardTruck) {
-            console.warn(`No exact fit for ${remaining} remaining. Falling back to smallest available truck.`);
-            bestYardTruck = yardTrucks.find(truck => remaining <= truck.max);
+        if (!bestYardTruck || remaining > bestYardTruck.max) {
+            console.warn(`No exact fit for ${remaining} remaining. Assigning to the smallest truck available.`);
+            bestYardTruck = yardTrucks[0];
         }
 
-        // Safety check (should not happen but just in case)
-        if (!bestYardTruck) {
-            console.error(`ERROR: No suitable truck found for remaining load of ${remaining}!`);
-            break;
-        }
-
-        // Determine the load amount (either full or remaining load)
         let loadAmount = Math.min(bestYardTruck.max, remaining);
         remaining -= loadAmount;
 
-        // Add the truck load to yardLoads
         yardLoads.push({
             truckName: bestYardTruck.name,
             amount: loadAmount,
-            rate: bestYardTruck.rate,
-            max: bestYardTruck.max
+            rate: bestYardTruck.rate
         });
 
-        console.log(`Assigned ${loadAmount} to ${bestYardTruck.name} (min: ${bestYardTruck.min}, max: ${bestYardTruck.max})`);
-    }  
+        if (remaining <= 0) {
+            break;
+        }
+    }
     
     console.log(`Yard Truck Loads for ${location.name}:`, yardLoads);
     return { yardLoads, remaining };
@@ -1327,35 +1319,26 @@ async function calculatePitTruckLoads(amountNeeded, materialInfo, location) {
     pitTrucks.sort((a, b) => b.max - a.max);
 
     while (remaining > 0) {
-        // Find the best truck that fits the remaining load
-        let bestPitTruck = pitTrucks.find(truck => remaining >= truck.min);
+        let bestPitTruck = pitTrucks.find(truck => remaining >= truck.min) || pitTrucks[0];
 
-        // Fallback to the smallest truck if no truck fits perfectly
-        if (!bestPitTruck) {
-            console.warn(`No exact fit for ${remaining} remaining. Falling back to smallest available truck.`);
-            bestPitTruck = pitTrucks.find(truck => remaining <= truck.max);
+        if (!bestPitTruck || remaining > bestPitTruck.max) {
+            console.warn(`No exact fit for ${remaining} remaining. Assigning to the smallest truck available.`);
+            bestPitTruck = pitTrucks[0];
         }
 
-        // Safety check (should not happen but just in case)
-        if (!bestPitTruck) {
-            console.error(`ERROR: No suitable truck found for remaining load of ${remaining}!`);
-            break;
-        }
-
-        // Determine the load amount (either full or remaining load)
         let loadAmount = Math.min(bestPitTruck.max, remaining);
         remaining -= loadAmount;
 
-        // Add the truck load to pitLoads
         pitLoads.push({
             truckName: bestPitTruck.name,
             amount: loadAmount,
-            rate: bestPitTruck.rate,
-            max: bestPitTruck.max
+            rate: bestPitTruck.rate
         });
 
-        console.log(`Assigned ${loadAmount} to ${bestPitTruck.name} (min: ${bestPitTruck.min}, max: ${bestPitTruck.max})`);
-    }  
+        if (remaining <= 0) {
+            break;
+        }
+    } 
 
     console.log(`Completed Pit Load Calculation for: ${location.name}`);
     return { pitLoads };
